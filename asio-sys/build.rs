@@ -41,18 +41,19 @@ fn is_msvc() -> bool {
 }
 
 fn main() {
+    // ASIO is Windows-only. Skip build on non-Windows platforms.
+    match std::env::var("CARGO_CFG_TARGET_OS") {
+        Ok(os) if os != "windows" => {
+            let out_dir = PathBuf::from(env::var("OUT_DIR").expect("bad path"));
+            create_stub_bindings(&out_dir);
+            return;
+        }
+        _ => {}
+    }
+
     // When building on docs.rs, skip the actual build and generate stub bindings
     if std::env::var("DOCS_RS").is_ok() {
         println!("cargo:warning=Building for docs.rs - generating stub bindings");
-        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("bad path"));
-        create_stub_bindings(&out_dir);
-        return;
-    }
-
-    // ASIO is Windows-only. Skip build on non-Windows platforms.
-    let target = std::env::var("TARGET").unwrap_or_default();
-    if !target.contains("windows") && !target.contains("msvc") {
-        println!("cargo:warning=ASIO is Windows-only. Skipping build on this platform.");
         let out_dir = PathBuf::from(env::var("OUT_DIR").expect("bad path"));
         create_stub_bindings(&out_dir);
         return;
